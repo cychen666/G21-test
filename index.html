@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>童玩新造：竹蟬數位手作體驗</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #FDF6E7;
+      background-image: radial-gradient(#E8D8B8 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      color: #4A3520;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 5秒無動作呼吸式微光波紋 (Pulse Glow) */
+    @keyframes pulseGlow {
+      0%, 100% {
+        filter: drop-shadow(0 0 8px rgba(255, 179, 0, 0.9)) drop-shadow(0 0 18px rgba(255, 111, 0, 0.65));
+      }
+      50% {
+        filter: drop-shadow(0 0 18px rgba(255, 213, 79, 1)) drop-shadow(0 0 30px rgba(255, 143, 0, 0.95));
+      }
+    }
+    .pulse-guide {
+      animation: pulseGlow 1.4s infinite ease-in-out;
+    }
+
+    /* 小手點擊/滑動引導動畫 */
+    @keyframes handBob {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-10px) scale(1.08); }
+    }
+    .hand-bob {
+      animation: handBob 1.1s infinite ease-in-out;
+    }
+
+    /* 金色蜜滴重力回彈微動效 (使用 scaleY 保持頂端錨點固定不位移) */
+    @keyframes honeyBounce {
+      0% { transform: scaleY(0.45) scaleX(1.3); }
+      35% { transform: scaleY(1.22) scaleX(0.86); }
+      65% { transform: scaleY(0.92) scaleX(1.05); }
+      85% { transform: scaleY(1.04) scaleX(0.98); }
+      100% { transform: scaleY(1) scaleX(1); }
+    }
+    .honey-drop-bounce {
+      transform-box: fill-box;
+      transform-origin: 50% 0%;
+      animation: honeyBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    /* 阿蟬師傅微幅呼吸動態 */
+    @keyframes masterIdle {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+    .master-float {
+      animation: masterIdle 2.8s infinite ease-in-out;
+    }
+
+    /* 蟬翼微振 */
+    @keyframes wingFlutter {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(3deg); }
+    }
+    .wing-flutter {
+      transform-origin: 55px 72px;
+      animation: wingFlutter 0.35s infinite ease-in-out;
+    }
+
+    /* 煙火彩帶飄落 */
+    @keyframes confettiFall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(420px) rotate(720deg); opacity: 0; }
+    }
+    .confetti-piece {
+      animation: confettiFall 2.4s ease-out forwards;
+    }
+
+    /* 按鈕立體按壓效果 */
+    .btn-toy {
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .btn-toy:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25) !important;
+    }
+  </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between">
+
+  <!-- 頂部導覽與步驟進度列 -->
+  <header class="w-full px-3 sm:px-6 pt-2.5 pb-1.5 flex items-center justify-between gap-2 z-20 shrink-0">
+    <!-- 左側標題與步驟顯示 -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="bg-amber-500 text-white font-black px-3 py-1.5 rounded-2xl shadow-md text-sm sm:text-lg tracking-wide flex items-center gap-1.5">
+        <span>🎋</span>
+        <span>竹蟬手作</span>
+      </div>
+      <div id="step-badge" class="bg-white/90 border-2 border-amber-300 text-amber-900 font-bold px-3 py-1 rounded-2xl text-xs sm:text-base shadow-sm">
+        步驟 1 / 9
+      </div>
+    </div>
+
+    <!-- 中央圓點進度條 (支援點擊切換測試) -->
+    <div id="progress-dots" class="hidden md:flex items-center gap-1.5 bg-white/80 px-3 py-1.5 rounded-full border border-amber-200 shadow-inner">
+      <!-- 由 JS 動態生成 9 個進度圓點 -->
+    </div>
+
+    <!-- 右側功能按鈕：已確認規格清單、收藏箱、語音重播 -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <button id="btn-tbd" onclick="toggleModal('modal-tbd', true)" class="btn-toy bg-emerald-100 hover:bg-emerald-200 border-2 border-emerald-400 text-emerald-900 font-bold px-2.5 sm:px-3 py-1.5 rounded-2xl text-xs sm:text-sm shadow-[0_3px_0_#34D399] flex items-center gap-1 cursor-pointer">
+        <span>✅ 規格確認(1)</span>
+      </button>
+      <button id="btn-box" onclick="openCollectionModal()" class="btn-toy bg-sky-100 hover:bg-sky-200 border-2 border-sky-400 text-sky-900 font-bold px-2.5 sm:px-3 py-1.5 rounded-2xl text-xs sm:text-sm shadow-[0_3px_0_#38BDF8] flex items-center gap-1 cursor-pointer">
+        <span>🧸 童玩箱</span>
+        <span id="box-count" class="bg-sky-500 text-white text-xs px-1.5 py-0.2 rounded-full">0</span>
+      </button>
+      <button id="btn-sound" onclick="replayVoice()" title="再聽一次" class="btn-toy bg-amber-400 hover:bg-amber-300 border-2 border-amber-600 text-amber-950 font-black p-2 rounded-2xl shadow-[0_3px_0_#B45309] cursor-pointer">
+        🔊
+      </button>
+    </div>
+  </header>
+
+  <!-- 中央主互動舞台區 (SVG 向量繪本畫布) -->
+  <main class="relative flex-1 w-full max-w-5xl mx-auto px-3 sm:px-6 py-1 flex flex-col items-center justify-center overflow-hidden">
+    <div id="stage-card" class="relative w-full h-full bg-white/95 rounded-[2rem] border-4 border-amber-300 shadow-xl flex flex-col items-center justify-between overflow-hidden">
+      
+      <!-- 步驟大標題與簡短指令 -->
+      <div class="w-full pt-3 sm:pt-4 px-4 flex flex-col items-center text-center z-10 pointer-events-none">
+        <div class="flex items-center gap-2">
+          <h1 id="step-title" class="text-xl sm:text-3xl font-black text-amber-900 tracking-wide">
+            01. 加熱松香
+          </h1>
+          <span id="step-tbd-tag" class="hidden bg-rose-500 text-white text-xs sm:text-sm font-bold px-2.5 py-0.5 rounded-full shadow">
+            待確認
+          </span>
+        </div>
+        <p id="step-short-hint" class="text-sm sm:text-lg font-bold text-amber-700 mt-0.5">
+          按住「點火」按鈕，把松香煮成金色糖漿！
+        </p>
+      </div>
+
+      <!-- 核心 SVG 互動舞台 (viewBox 800x420 響應式不失真) -->
+      <div class="relative w-full flex-1 flex items-center justify-center overflow-hidden">
+        <svg id="game-svg" viewBox="0 0 800 420" class="w-full h-full max-h-[58vh] select-none" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <!-- 金色松香漸層 -->
+            <radialGradient id="rosinLiquidGrad" cx="50%" cy="40%" r="55%">
+              <stop offset="0%" stop-color="#FFE082" />
+              <stop offset="55%" stop-color="#FFB300" />
+              <stop offset="100%" stop-color="#E65100" />
+            </radialGradient>
+            <!-- 半透明金色水滴漸層 -->
+            <linearGradient id="honeyDropGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFF59D" stop-opacity="0.96" />
+              <stop offset="45%" stop-color="#FFB300" stop-opacity="0.88" />
+              <stop offset="100%" stop-color="#E65100" stop-opacity="0.94" />
+            </linearGradient>
+            <!-- 竹筷木紋漸層 -->
+            <linearGradient id="bambooGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#E6C280" />
+              <stop offset="50%" stop-color="#F5DEB3" />
+              <stop offset="100%" stop-color="#C89D54" />
+            </linearGradient>
+            <!-- 養樂多瓶身漸層 (半透明乳白，可隱約看見內部) -->
+            <linearGradient id="bottleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#F1F5F9" stop-opacity="0.92" />
+              <stop offset="35%" stop-color="#FFFFFF" stop-opacity="0.72" />
+              <stop offset="75%" stop-color="#F8FAFC" stop-opacity="0.78" />
+              <stop offset="100%" stop-color="#CBD5E1" stop-opacity="0.92" />
+            </linearGradient>
+            <!-- 養樂多瓶內部陰影漸層 -->
+            <linearGradient id="bottleInnerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#CBD5E1" />
+              <stop offset="100%" stop-color="#E2E8F0" />
+            </linearGradient>
+            <!-- 柔和陰影濾鏡 -->
+            <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#4A3520" flood-opacity="0.18" />
+            </filter>
+          </defs>
+
+          <!-- 工作桌面背景 -->
+          <rect x="30" y="325" width="740" height="75" rx="28" fill="#F3E2C7" />
+          <rect x="45" y="335" width="710" height="14" rx="7" fill="#FAF0DF" />
+
+          <!-- 動態步驟內容容器 -->
+          <g id="svg-scene-layer"></g>
+
+          <!-- 5秒無動作引導小手圖層 -->
+          <g id="svg-guide-layer" class="pointer-events-none hidden">
+            <g id="guide-hand" class="hand-bob">
+              <circle cx="0" cy="0" r="34" fill="rgba(255, 193, 7, 0.35)" />
+              <text x="0" y="14" font-size="44" text-anchor="middle">👆</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <!-- 步驟專屬大型動作按鈕列 (置於畫布下方，幼兒好點擊) -->
+      <div id="action-controls" class="w-full pb-3 sm:pb-4 px-4 flex items-center justify-center gap-3 sm:gap-5 z-10 min-h-[68px]">
+        <!-- 由 JS 依步驟動態渲染大按鈕 -->
+      </div>
+    </div>
+  </main>
+
+  <!-- 底部「阿蟬師傅」定裝陪伴導師列 -->
+  <footer class="w-full max-w-5xl mx-auto px-3 sm:px-6 pb-3 pt-1 shrink-0 z-20">
+    <div class="bg-amber-100/95 border-3 border-amber-400 rounded-3xl px-3 sm:px-5 py-2 shadow-md flex items-center justify-between gap-3">
+      
+      <!-- 左側：定裝版阿蟬師傅 SVG 頭像 -->
+      <div class="flex items-center gap-2.5 sm:gap-4 flex-1 min-w-0">
+        <div class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 bg-emerald-100 rounded-2xl border-2 border-emerald-500 flex items-center justify-center overflow-visible shadow-inner master-float">
+          <svg viewBox="0 0 110 110" class="w-full h-full overflow-visible">
+            <!-- 半透明蟬翼 (左右雙翅) -->
+            <g class="wing-flutter">
+              <ellipse cx="22" cy="68" rx="18" ry="10" transform="rotate(-28 22 68)" fill="#E0F2FE" fill-opacity="0.88" stroke="#38BDF8" stroke-width="2" />
+              <line x1="10" y1="73" x2="32" y2="63" stroke="#7DD3FC" stroke-width="1.5" />
+            </g>
+            <g class="wing-flutter">
+              <ellipse cx="88" cy="68" rx="18" ry="10" transform="rotate(28 88 68)" fill="#E0F2FE" fill-opacity="0.88" stroke="#38BDF8" stroke-width="2" />
+              <line x1="100" y1="73" x2="78" y2="63" stroke="#7DD3FC" stroke-width="1.5" />
+            </g>
+
+            <!-- 身體與藍色工匠圍裙 -->
+            <rect x="33" y="68" width="44" height="34" rx="16" fill="#15803D" />
+            <path d="M39 72 L71 72 L74 102 L36 102 Z" fill="#0284C7" stroke="#0369A1" stroke-width="2" />
+            <line x1="42" y1="68" x2="42" y2="75" stroke="#FBBF24" stroke-width="3.5" stroke-linecap="round" />
+            <line x1="68" y1="68" x2="68" y2="75" stroke="#FBBF24" stroke-width="3.5" stroke-linecap="round" />
+            <!-- 圍裙口袋小竹蟬標誌 -->
+            <rect x="46" y="81" width="18" height="12" rx="4" fill="#38BDF8" />
+            <circle cx="55" cy="87" r="3" fill="#FDE047" />
+
+            <!-- 頭部 (竹綠色) -->
+            <ellipse cx="55" cy="48" rx="28" ry="23" fill="#4ADE80" stroke="#15803D" stroke-width="3" />
+            <!-- 兩側大複眼 -->
+            <circle cx="30" cy="43" r="9.5" fill="#1E293B" stroke="#15803D" stroke-width="2.5" />
+            <circle cx="27.5" cy="40.5" r="3.2" fill="#FFFFFF" />
+            <circle cx="80" cy="43" r="9.5" fill="#1E293B" stroke="#15803D" stroke-width="2.5" />
+            <circle cx="77.5" cy="40.5" r="3.2" fill="#FFFFFF" />
+
+            <!-- 腮紅與微笑嘴巴 -->
+            <ellipse cx="38" cy="54" rx="4.5" ry="2.8" fill="#FB7185" opacity="0.7" />
+            <ellipse cx="72" cy="54" rx="4.5" ry="2.8" fill="#FB7185" opacity="0.7" />
+            <path d="M46 55 Q55 64 64 55" fill="none" stroke="#14532D" stroke-width="3.2" stroke-linecap="round" />
+
+            <!-- 傳統編織小草帽 -->
+            <ellipse cx="55" cy="27" rx="34" ry="8" fill="#FBBF24" stroke="#B45309" stroke-width="2.5" />
+            <path d="M35 27 Q55 6 75 27 Z" fill="#FDE047" stroke="#B45309" stroke-width="2.5" />
+            <path d="M37 23 Q55 26 73 23" fill="none" stroke="#DC2626" stroke-width="3.5" />
+          </svg>
+        </div>
+
+        <!-- 對話氣泡 -->
+        <div class="bg-white border-2 border-amber-300 rounded-2xl px-3.5 py-2 shadow-sm flex-1 min-w-0">
+          <div class="flex items-center gap-1.5 mb-0.5">
+            <span class="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg">阿蟬師傅</span>
+          </div>
+          <p id="master-speech" class="text-sm sm:text-base font-bold text-amber-950 truncate sm:whitespace-normal leading-snug">
+            我是阿蟬師傅！一起做會唱歌的竹蟬吧！
+          </p>
+        </div>
+      </div>
+
+      <!-- 右側：上一步 / 下一步導覽按鈕 -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="btn-prev" onclick="prevStep()" class="btn-toy bg-amber-200 hover:bg-amber-300 disabled:opacity-40 text-amber-900 font-black px-3 sm:px-4 py-2.5 rounded-2xl text-sm sm:text-base shadow-[0_3px_0_#D97706] cursor-pointer">
+          ◀ 上一步
+        </button>
+        <button id="btn-next" onclick="nextStep()" class="btn-toy bg-emerald-500 hover:bg-emerald-400 text-white font-black px-4 sm:px-5 py-2.5 rounded-2xl text-sm sm:text-base shadow-[0_3px_0_#047857] cursor-pointer">
+          下一步 ▶
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 彈窗 1：規格確認與唯一待確認項清單 -->
+  <div id="modal-tbd" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white border-4 border-emerald-500 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl flex flex-col gap-4 max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b-2 border-amber-100 pb-3">
+        <h2 class="text-xl font-black text-emerald-800 flex items-center gap-2">
+          <span>📋</span> 企畫規格與流程確認表
+        </h2>
+        <button onclick="toggleModal('modal-tbd', false)" class="bg-stone-200 hover:bg-stone-300 text-stone-700 font-black w-9 h-9 rounded-full cursor-pointer">✕</button>
+      </div>
+      <div class="text-sm sm:text-base text-stone-700 space-y-2.5 leading-relaxed">
+        <p class="font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl">
+          ✅ 最新已確認並完成修正項目：
+        </p>
+        <ul class="list-disc pl-5 space-y-1.5 text-sm">
+          <li><strong>步驟 02 水滴錨點固定</strong>：半透明金色水滴已直接綁定在竹筷前端沾取松香座標上，提起時完全緊貼筷尖不偏移。</li>
+          <li><strong>步驟 03 摩擦位置固定</strong>：摩擦區與手勢提示固定於竹筷前端松香塗層正上方，滑動不跑位。</li>
+          <li><strong>步驟 04 纏線位置與圈數</strong>：對準步驟 03 凹痕處，正式確認纏繞 <strong>3 圈</strong>。</li>
+          <li><strong>步驟 07 牙籤在杯內、線在杯外</strong>：牙籤橫向卡於養樂多瓶（杯子）內部上方，紅線穿出杯底在外面往下拉。</li>
+          <li><strong>步驟 09 勳章免命名 & 阿蟬師傅定裝</strong>：完成直接頒發「小小童玩工匠勳章」；阿蟬師傅造型與每次重啟從第一步開始皆已實作。</li>
+        </ul>
+
+        <p class="font-bold text-rose-700 bg-rose-50 p-2.5 rounded-xl mt-2">
+          ⚠️ 唯一尚待確認項目（附檔 2 為通用演算法範例圖）：
+        </p>
+        <ul class="list-disc pl-5 space-y-1.5 text-sm">
+          <li><strong>系統流程圖分歧邏輯【待確認】</strong>：若幼兒在步驟中連續失敗超過 N 次，是否需要跳出「教師協助模式」或自動示範通關？目前暫以「5 秒無動作呼吸微光＋無限次寬容重試」實作。</li>
+        </ul>
+      </div>
+      <button onclick="toggleModal('modal-tbd', false)" class="btn-toy w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-3 rounded-2xl text-lg shadow-[0_4px_0_#047857] cursor-pointer">
+        我知道了！繼續體驗
+      </button>
+    </div>
+  </div>
+
+  <!-- 彈窗 2：童玩收藏箱 (隨時點開甩動搖響) -->
+  <div id="modal-box" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-amber-50 border-4 border-sky-400 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
+      <div class="w-full flex items-center justify-between border-b-2 border-sky-200 pb-2">
+        <h2 class="text-xl font-black text-sky-900">🧸 我的童玩收藏箱</h2>
+        <button onclick="toggleModal('modal-box', false)" class="bg-sky-200 hover:bg-sky-300 text-sky-900 font-black w-9 h-9 rounded-full cursor-pointer">✕</button>
+      </div>
+      <div id="box-content" class="w-full py-3 flex flex-col items-center gap-3">
+        <!-- 由 JS 動態填入收藏的竹蟬與搖響互動按鈕 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 煙火慶祝覆蓋層 (步驟 9 觸發) -->
+  <div id="confetti-container" class="pointer-events-none fixed inset-0 z-40 overflow-hidden"></div>
+
+  <script>
+    /**
+     * ============================================================================
+     * 1. 純數學運算 Web Audio 物理聲學引擎 (無外部音檔，即時運算蟬鳴與音效)
+     * ============================================================================
+     */
+    class CicadaAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.cicadaOsc = null;
+        this.cicadaFilter = null;
+        this.cicadaGain = null;
+        this.isCicadaPlaying = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // 播放氣泡沸騰聲 (低通濾波粉紅噪音)
+      playBubble() {
+        this.init();
+        const dur = 0.22;
+        const bufferSize = this.ctx.sampleRate * dur;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(320 + Math.random() * 260, this.ctx.currentTime);
+        filter.Q.value = 6;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start();
+      }
+
+      // 播放清脆正弦波水滴聲
+      playWaterDrop() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(1180, now + 0.14);
+
+        gain.gain.setValueAtTime(0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.23);
+      }
+
+      // 播放砂紙摩擦聲 (高通噪聲)
+      playSandpaper() {
+        this.init();
+        const dur = 0.18;
+        const bufferSize = this.ctx.sampleRate * dur;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 1800;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start();
+      }
+
+      // 播放纏線「咻咻」聲 / 磁吸穿洞「溜」聲
+      playWhoosh(startFreq = 300, endFreq = 780) {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.18);
+
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.21);
+      }
+
+      // 播放木槌打擊與卡榫「咚 / 咔噠」聲
+      playWoodKnock(pitch = 190) {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(pitch, now);
+        osc.frequency.exponentialRampToValueAtTime(65, now + 0.15);
+
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.19);
+      }
+
+      // 播放通關勝利和弦音效
+      playSuccessFanfare() {
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + idx * 0.09;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.36);
+        });
+      }
+
+      // 啟動或更新連續竹蟬共鳴聲 (鋸齒波摩擦 + 帶通濾波器養樂多空腔共鳴)
+      updateCicadaSound(angularSpeed) {
+        this.init();
+        const clampedSpeed = Math.min(Math.max(angularSpeed, 0), 25);
+
+        if (clampedSpeed < 0.8) {
+          this.stopCicadaSound();
+          return;
+        }
+
+        const now = this.ctx.currentTime;
+        if (!this.isCicadaPlaying) {
+          this.cicadaOsc = this.ctx.createOscillator();
+          this.cicadaOsc.type = 'sawtooth'; // 鋸齒波模擬松香摩擦微跳動
+
+          this.cicadaFilter = this.ctx.createBiquadFilter();
+          this.cicadaFilter.type = 'bandpass'; // 帶通濾波模擬養樂多罐空腔共鳴
+          this.cicadaFilter.Q.value = 5.5;
+
+          this.cicadaGain = this.ctx.createGain();
+          this.cicadaGain.gain.setValueAtTime(0.01, now);
+
+          this.cicadaOsc.connect(this.cicadaFilter);
+          this.cicadaFilter.connect(this.cicadaGain);
+          this.cicadaGain.connect(this.ctx.destination);
+          this.cicadaOsc.start(now);
+          this.isCicadaPlaying = true;
+        }
+
+        // 角速度連動：慢轉低沉嗡嗡叫(160Hz)，快旋高亢蟬鳴(520Hz + 顫音)
+        const vibrato = Math.sin(now * 48) * 18;
+        const baseFreq = 150 + clampedSpeed * 15 + vibrato;
+        const resonanceFreq = 650 + clampedSpeed * 55;
+        const targetGain = Math.min(0.42, 0.1 + clampedSpeed * 0.016);
+
+        this.cicadaOsc.frequency.setTargetAtTime(baseFreq, now, 0.04);
+        this.cicadaFilter.frequency.setTargetAtTime(resonanceFreq, now, 0.04);
+        this.cicadaGain.gain.setTargetAtTime(targetGain, now, 0.05);
+      }
+
+      stopCicadaSound() {
+        if (this.isCicadaPlaying && this.cicadaGain && this.ctx) {
+          const now = this.ctx.currentTime;
+          this.cicadaGain.gain.setTargetAtTime(0.0001, now, 0.06);
+          const oscToStop = this.cicadaOsc;
+          setTimeout(() => {
+            try { oscToStop.stop(); oscToStop.disconnect(); } catch (e) {}
+          }, 120);
+          this.isCicadaPlaying = false;
+        }
+      }
+    }
+
+    const audioEngine = new CicadaAudioEngine();
+
+    /**
+     * ============================================================================
+     * 2. Web Speech TTS 語音朗讀與 5 秒無動作防呆引導系統
+     * ============================================================================
+     */
+    let currentSpeechText = '';
+    let idleTimer = null;
+
+    function speakText(text) {
+      currentSpeechText = text;
+      const speechEl = document.getElementById('master-speech');
+      if (speechEl) speechEl.textContent = text;
+
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = 'zh-TW';
+          utter.rate = 0.96;
+          utter.pitch = 1.15;
+          window.speechSynthesis.speak(utter);
+        } catch (e) {
+          // 忽略部分瀏覽器未互動前的語音限制
+        }
+      }
+    }
+
+    function replayVoice() {
+      audioEngine.init();
+      speakText(currentSpeechText);
+      resetIdleTimer();
+    }
+
+    function resetIdleTimer() {
+      clearTimeout(idleTimer);
+      const guideLayer = document.getElementById('svg-guide-layer');
+      if (guideLayer) guideLayer.classList.add('hidden');
+
+      document.querySelectorAll('.pulse-target').forEach(el => el.classList.remove('pulse-guide'));
+
+      if (appState.fsm === 'Success' || appState.currentStep === 9) return;
+
+      idleTimer = setTimeout(() => {
+        const stepConfig = STEPS[appState.currentStep - 1];
+        if (!stepConfig) return;
+        document.querySelectorAll('.pulse-target').forEach(el => el.classList.add('pulse-guide'));
+
+        const hand = document.getElementById('guide-hand');
+        if (hand && stepConfig.guidePos) {
+          hand.setAttribute('transform', `translate(${stepConfig.guidePos.x}, ${stepConfig.guidePos.y})`);
+          guideLayer.classList.remove('hidden');
+        }
+        speakText(stepConfig.idlePrompt);
+      }, 5000);
+    }
+
+    /**
+     * ============================================================================
+     * 3. 9 大手作步驟規格與有限狀態機 (FSM: Idle -> Interacting -> Success)
+     * ============================================================================
+     */
+    const STEPS = [
+      {
+        id: 1,
+        title: '01. 加熱松香',
+        shortHint: '按住「點火」按鈕，把松香煮成金色糖漿！',
+        voiceIntro: '第一步，按住點火按鈕，把鍋子裡的松香塊煮成金黃色的糖漿！',
+        idlePrompt: '來，用手指按住下面的紅色點火按鈕喔！',
+        tbd: false,
+        guidePos: { x: 400, y: 260 }
+      },
+      {
+        id: 2,
+        title: '02. 竹筷沾浸',
+        shortHint: '往下拖動竹筷沾松香，再提起來看看！',
+        voiceIntro: '第二步，把竹筷往下拉進金色松香裡，再提起來，筷尖會掛著一滴金色蜜糖喔！',
+        idlePrompt: '按住竹筷往下拉進鍋子裡，沾好再往上提起來！',
+        tbd: false,
+        guidePos: { x: 400, y: 120 }
+      },
+      {
+        id: 3,
+        title: '03. 砂紙刮痕',
+        shortHint: '在竹筷前端的松香上，用砂紙來回刷 3 次！',
+        voiceIntro: '第三步，在竹筷前端沾到松香的地方，用砂紙來回刷三下，磨出凹痕！',
+        idlePrompt: '在竹筷右邊黃色松香的地方，用手指左右滑動刷三下！',
+        tbd: false,
+        guidePos: { x: 565, y: 195 }
+      },
+      {
+        id: 4,
+        title: '04. 綁上棉線',
+        shortHint: '在剛剛磨出的凹痕處，劃圈綁上 3 圈紅棉線！',
+        voiceIntro: '第四步，在剛剛磨出的凹痕這裡，用手指轉圈圈，幫竹筷綁上三圈紅棉線！',
+        idlePrompt: '在竹筷右邊的凹痕處轉圈滑動，綁滿三圈紅線！',
+        tbd: false,
+        guidePos: { x: 565, y: 195 }
+      },
+      {
+        id: 5,
+        title: '05. 瓶底穿洞',
+        shortHint: '點擊瓶底中央的紅色靶心，用牙籤尖端戳出小圓孔！',
+        voiceIntro: '第五步，拿牙籤尖端對準養樂多瓶底中間的紅色靶心點下去，戳出一個小圓孔！',
+        idlePrompt: '點一下中間的紅色靶心，用牙籤幫瓶底戳個小洞！',
+        tbd: false,
+        guidePos: { x: 400, y: 215 }
+      },
+      {
+        id: 6,
+        title: '06. 棉線穿洞',
+        shortHint: '把發光的紅線頭，拖向瓶底小洞吸進去！',
+        voiceIntro: '第六步，把會發光的紅線頭拉向瓶底的小圓孔，它會自動吸進去喔！',
+        idlePrompt: '拖動左邊發光的紅線頭，靠近瓶底的小洞！',
+        tbd: false,
+        guidePos: { x: 230, y: 215 }
+      },
+      {
+        id: 7,
+        title: '07. 卡榫鎖定',
+        shortHint: '牙籤卡在杯子裡面，拉拉看杯子外面的紅線！',
+        voiceIntro: '第七步，牙籤已經卡在杯子裡面了，往下拉拉看杯子外面的紅線，測試有沒有卡緊！',
+        idlePrompt: '按住杯子下面的紅色拉環，往下拉拉看！',
+        tbd: false,
+        guidePos: { x: 400, y: 315 }
+      },
+      {
+        id: 8,
+        title: '08. 甩動發聲',
+        shortHint: '用手指在畫面上畫大圈圈，讓竹蟬唱歌！',
+        voiceIntro: '第八步，握住竹筷，用手指在畫面上畫大圈圈甩動，聽聽看竹蟬怎麼唱歌！',
+        idlePrompt: '在畫面中間用手指畫大圈圈旋轉，竹蟬就會叫囉！',
+        tbd: false,
+        guidePos: { x: 480, y: 210 }
+      },
+      {
+        id: 9,
+        title: '09. 小工匠勳章',
+        shortHint: '太棒了！獲得專屬勳章並收入童玩收藏箱！',
+        voiceIntro: '恭喜你完成會唱歌的竹蟬！獲得小小童玩工匠勳章，快收進童玩箱隨時搖響吧！',
+        idlePrompt: '點擊下方按鈕，把竹蟬收進童玩箱吧！',
+        tbd: false,
+        guidePos: null
+      }
+    ];
+
+    // 每次執行程式強制從第一步驟開始
+    const appState = {
+      currentStep: 1,
+      fsm: 'Idle', // 'Idle' | 'Interacting' | 'Success'
+      completedSteps: new Set(),
+      savedCicadas: 0
+    };
+
+    /**
+     * ============================================================================
+     * 4. UI 渲染與步驟切換主控邏輯
+     * ============================================================================
+     */
+    function initApp() {
+      // 確保每次執行都從第 1 步開始
+      appState.currentStep = 1;
+      appState.fsm = 'Idle';
+      appState.completedSteps.clear();
+
+      renderProgressDots();
+      loadStep(1);
+    }
+
+    function renderProgressDots() {
+      const container = document.getElementById('progress-dots');
+      container.innerHTML = '';
+      STEPS.forEach(s => {
+        const btn = document.createElement('button');
+        const isCurrent = s.id === appState.currentStep;
+        const isDone = appState.completedSteps.has(s.id);
+        btn.className = `w-7 h-7 rounded-full font-black text-xs transition-all cursor-pointer flex items-center justify-center ${
+          isCurrent
+            ? 'bg-amber-500 text-white scale-115 ring-2 ring-amber-300'
+            : isDone
+            ? 'bg-emerald-500 text-white'
+            : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+        }`;
+        btn.textContent = s.id;
+        btn.title = s.title;
+        btn.onclick = () => {
+          audioEngine.init();
+          audioEngine.stopCicadaSound();
+          loadStep(s.id);
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function loadStep(stepNum) {
+      audioEngine.stopCicadaSound();
+      appState.currentStep = stepNum;
+      appState.fsm = 'Idle';
+
+      const step = STEPS[stepNum - 1];
+      document.getElementById('step-badge').textContent = `步驟 ${stepNum} / 9`;
+      document.getElementById('step-title').textContent = step.title;
+      document.getElementById('step-short-hint').textContent = step.shortHint;
+
+      const tbdTag = document.getElementById('step-tbd-tag');
+      if (step.tbd) {
+        tbdTag.classList.remove('hidden');
+      } else {
+        tbdTag.classList.add('hidden');
+      }
+
+      document.getElementById('btn-prev').disabled = stepNum === 1;
+      const btnNext = document.getElementById('btn-next');
+      if (stepNum === 9) {
+        btnNext.textContent = '重新製作 ↻';
+      } else {
+        btnNext.textContent = '下一步 ▶';
+      }
+
+      renderProgressDots();
+      renderStepScene(stepNum);
+      speakText(step.voiceIntro);
+      resetIdleTimer();
+    }
+
+    function prevStep() {
+      audioEngine.init();
+      if (appState.currentStep > 1) {
+        loadStep(appState.currentStep - 1);
+      }
+    }
+
+    function nextStep() {
+      audioEngine.init();
+      if (appState.currentStep < 9) {
+        loadStep(appState.currentStep + 1);
+      } else {
+        // 重新開始回到第一步驟
+        appState.completedSteps.clear();
+        loadStep(1);
+      }
+    }
+
+    function completeCurrentStep(customSpeech) {
+      if (appState.fsm === 'Success') return;
+      appState.fsm = 'Success';
+      appState.completedSteps.add(appState.currentStep);
+      clearTimeout(idleTimer);
+      document.getElementById('svg-guide-layer').classList.add('hidden');
+      document.querySelectorAll('.pulse-target').forEach(el => el.classList.remove('pulse-guide'));
+
+      renderProgressDots();
+      audioEngine.playSuccessFanfare();
+      if (customSpeech) speakText(customSpeech);
+
+      // 完成後自動突顯「下一步」按鈕
+      const btnNext = document.getElementById('btn-next');
+      btnNext.classList.add('ring-4', 'ring-emerald-300', 'scale-105');
+      setTimeout(() => btnNext.classList.remove('ring-4', 'ring-emerald-300', 'scale-105'), 1600);
+    }
+
+    /**
+     * ============================================================================
+     * 5. 各步驟專屬 SVG 場景與互動邏輯
+     * ============================================================================
+     */
+    function renderStepScene(stepNum) {
+      const scene = document.getElementById('svg-scene-layer');
+      const controls = document.getElementById('action-controls');
+      scene.innerHTML = '';
+      controls.innerHTML = '';
+
+      switch (stepNum) {
+        case 1: buildStep01(scene, controls); break;
+        case 2: buildStep02(scene, controls); break;
+        case 3: buildStep03(scene, controls); break;
+        case 4: buildStep04(scene, controls); break;
+        case 5: buildStep05(scene, controls); break;
+        case 6: buildStep06(scene, controls); break;
+        case 7: buildStep07(scene, controls); break;
+        case 8: buildStep08(scene, controls); break;
+        case 9: buildStep09(scene, controls); break;
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // 步驟 01：加熱松香 (火苗點擊充能 + 溫度儀表盤 + 松香塊融化成金色液體)
+    // --------------------------------------------------------------------------
+    function buildStep01(scene, controls) {
+      let heat = 0;
+      let heatInterval = null;
+
+      scene.innerHTML = `
+        <!-- 溫度儀表盤 -->
+        <g transform="translate(150, 175)">
+          <rect x="-55" y="-110" width="110" height="210" rx="28" fill="#FFFBEB" stroke="#F59E0B" stroke-width="4" filter="url(#softShadow)" />
+          <text x="0" y="-82" font-size="16" font-weight="900" fill="#92400E" text-anchor="middle">適溫計</text>
+          <!-- 溫度計玻璃管 -->
+          <rect x="-14" y="-62" width="28" height="120" rx="14" fill="#E5E7EB" />
+          <!-- 適溫目標綠色區間 -->
+          <rect x="-18" y="-52" width="36" height="32" rx="6" fill="#34D399" opacity="0.45" stroke="#059669" stroke-width="2" />
+          <text x="36" y="-31" font-size="13" font-weight="900" fill="#059669">適溫!</text>
+          <!-- 動態水銀柱 -->
+          <rect id="s1-mercury" x="-10" y="48" width="20" height="10" rx="10" fill="#EF4444" />
+          <circle cx="0" cy="65" r="22" fill="#EF4444" />
+        </g>
+
+        <!-- 小爐子與火苗 -->
+        <g transform="translate(420, 295)">
+          <rect x="-95" y="0" width="190" height="36" rx="14" fill="#64748B" />
+          <g id="s1-flames" opacity="0.25" transform="scale(0.6)">
+            <path d="M-45 0 Q-35 -48 -15 -12 Q0 -62 15 -12 Q35 -48 45 0 Z" fill="#F97316" />
+            <path d="M-25 0 Q-15 -30 0 -8 Q15 -30 25 0 Z" fill="#FDE047" />
+          </g>
+        </g>
+
+        <!-- 陶鍋與松香塊 -->
+        <g transform="translate(420, 225)" filter="url(#softShadow)">
+          <!-- 鍋身 -->
+          <path d="M-110 -20 L110 -20 L90 55 Q85 70 65 70 L-65 70 Q-85 70 -90 55 Z" fill="#78350F" stroke="#451A03" stroke-width="4" />
+          <rect x="-135" y="-12" width="30" height="16" rx="8" fill="#451A03" />
+          <rect x="105" y="-12" width="30" height="16" rx="8" fill="#451A03" />
+          <!-- 金色液態松香 (隨溫度升高浮現) -->
+          <ellipse id="s1-liquid" cx="0" cy="-12" rx="102" ry="18" fill="url(#rosinLiquidGrad)" opacity="0.1" />
+          <!-- 固態松香塊 (隨溫度升高縮小融化) -->
+          <g id="s1-solid-chunks">
+            <polygon points="-55,-8 -25,-34 15,-28 22,-5 -40,-2" fill="#FBBF24" stroke="#D97706" stroke-width="2" />
+            <polygon points="5,-6 35,-32 68,-16 55,-3" fill="#F59E0B" stroke="#B45309" stroke-width="2" />
+            <polygon points="-22,-4 8,-24 32,-6" fill="#FDE047" />
+          </g>
+          <!-- 氣泡層 -->
+          <g id="s1-bubbles"></g>
+        </g>
+      `;
+
+      controls.innerHTML = `
+        <button id="s1-fire-btn" class="pulse-target btn-toy bg-gradient-to-b from-orange-400 to-red-500 border-4 border-red-700 text-white font-black text-xl sm:text-2xl px-8 py-3 rounded-3xl shadow-[0_6px_0_#991B1B] flex items-center gap-3 cursor-pointer">
+          <span class="text-2xl sm:text-3xl">🔥</span>
+          <span>按住點火加熱</span>
+        </button>
+      `;
+
+      const fireBtn = document.getElementById('s1-fire-btn');
+      const mercury = document.getElementById('s1-mercury');
+      const flames = document.getElementById('s1-flames');
+      const liquid = document.getElementById('s1-liquid');
+      const chunks = document.getElementById('s1-solid-chunks');
+      const bubbles = document.getElementById('s1-bubbles');
+
+      const startHeating = (e) => {
+        e.preventDefault();
+        if (appState.fsm === 'Success') return;
+        audioEngine.init();
+        appState.fsm = 'Interacting';
+        resetIdleTimer();
+        flames.setAttribute('opacity', '1');
+        flames.setAttribute('transform', 'scale(1.15)');
+
+        clearInterval(heatInterval);
+        heatInterval = setInterval(() => {
+          if (appState.fsm === 'Success') {
+            clearInterval(heatInterval);
+            return;
+          }
+          heat = Math.min(100, heat + 3.5);
+          const ratio = heat / 100;
+
+          // 更新水銀柱高度
+          const barHeight = 10 + ratio * 95;
+          mercury.setAttribute('y', 58 - barHeight);
+          mercury.setAttribute('height', barHeight);
+
+          // 固體縮小、金色液體變濃
+          chunks.setAttribute('transform', `scale(${1 - ratio * 0.85})`);
+          chunks.setAttribute('opacity', `${1 - ratio}`);
+          liquid.setAttribute('opacity', `${0.15 + ratio * 0.85}`);
+
+          if (Math.random() < 0.45) {
+            audioEngine.playBubble();
+            const bx = (Math.random() - 0.5) * 140;
+            const b = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            b.setAttribute('cx', bx);
+            b.setAttribute('cy', -12);
+            b.setAttribute('r', 4 + Math.random() * 5);
+            b.setAttribute('fill', '#FEF08A');
+            bubbles.appendChild(b);
+            setTimeout(() => b.remove(), 350);
+          }
+
+          if (heat >= 100) {
+            clearInterval(heatInterval);
+            flames.setAttribute('transform', 'scale(0.85)');
+            fireBtn.innerHTML = '<span>✨ 松香融化完成！</span>';
+            fireBtn.classList.remove('from-orange-400', 'to-red-500');
+            fireBtn.classList.add('from-emerald-400', 'to-emerald-600', 'border-emerald-800');
+            completeCurrentStep('哇！松香塊變成金黃色的液體糖漿了，進入下一步吧！');
+          }
+        }, 70);
+      };
+
+      const stopHeating = () => {
+        clearInterval(heatInterval);
+        if (appState.fsm !== 'Success') {
+          flames.setAttribute('opacity', '0.35');
+          flames.setAttribute('transform', 'scale(0.7)');
+        }
+      };
+
+      fireBtn.addEventListener('pointerdown', startHeating);
+      window.addEventListener('pointerup', stopHeating);
+    }
+
+    // --------------------------------------------------------------------------
+    // 步驟 02：竹筷沾浸 (水滴精準固定在竹筷前端沾取的位置上)
+    // --------------------------------------------------------------------------
+    function buildStep02(scene, controls) {
+      let hasDipped = false;
+      let chopstickY = 105; // 竹筷群組中心 Y 座標 (筷尖位於本地座標 y = +80)
+
+      scene.innerHTML = `
+        <!-- 陶鍋與金色熱松香 (鍋面位於 y = 265) -->
+        <g transform="translate(400, 285)" filter="url(#softShadow)">
+          <path d="M-120 -20 L120 -20 L98 55 Q92 70 70 70 L-70 70 Q-92 70 -98 55 Z" fill="#78350F" stroke="#451A03" stroke-width="4" />
+          <ellipse cx="0" cy="-20" rx="116" ry="22" fill="url(#rosinLiquidGrad)" />
+          <ellipse cx="-25" cy="-22" rx="45" ry="6" fill="#FEF9C3" opacity="0.6" />
+        </g>
+
+        <!-- 目標沾取提示圈 -->
+        <ellipse id="s2-target-ring" cx="400" cy="265" rx="42" ry="14" fill="none" stroke="#FFF" stroke-width="3" stroke-dasharray="6 6" />
+
+        <!-- 可上下拖曳的竹筷群組 (筷尖固定在本地座標 x=0, y=80) -->
+        <g id="s2-chopstick" transform="translate(400, ${chopstickY})" class="pulse-target cursor-grab">
+          <!-- 隱形超大觸控熱區 -->
+          <rect x="-65" y="-100" width="130" height="210" fill="transparent" />
+          <!-- 竹筷本體 (從 y=-85 延伸至筷尖 y=80) -->
+          <rect x="-12" y="-85" width="24" height="165" rx="10" fill="url(#bambooGrad)" stroke="#92400E" stroke-width="3" />
+          <!-- 竹節線 -->
+          <line x1="-11" y1="-35" x2="11" y2="-35" stroke="#B45309" stroke-width="2.5" />
+          <line x1="-11" y1="20" x2="11" y2="20" stroke="#B45309" stroke-width="2.5" />
+
+          <!-- 沾取後的松香包覆層與圓潤半透明金色水滴：精準固定在竹筷最前端 (0, 80) -->
+          <g id="s2-honey-tip" transform="translate(0, 80)" class="hidden">
+            <!-- 裹在竹筷前端的金色松香塗層 -->
+            <rect x="-13.5" y="-34" width="27" height="36" rx="12" fill="url(#honeyDropGrad)" stroke="#D97706" stroke-width="2" />
+            <!-- 固定垂掛在筷尖 (0, 0) 正下方的半透明金色水滴 -->
+            <path id="s2-drop-shape" d="M 0 -2 C 11 10, 14 21, 0 28 C -14 21, -11 10, 0 -2 Z" fill="url(#honeyDropGrad)" stroke="#F59E0B" stroke-width="1.5" />
+            <!-- 水滴高光反光點 -->
+            <ellipse cx="-4" cy="14" rx="2.5" ry="5" transform="rotate(-15 -4 14)" fill="#FFFFFF" opacity="0.85" />
+          </g>
+
+          <!-- 操作方向提示牌 -->
+          <g id="s2-badge" transform="translate(78, -10)">
+            <rect x="-52" y="-18" width="104" height="36" rx="18" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2.5" />
+            <text id="s2-badge-text" x="0" y="6" font-size="15" font-weight="900" fill="#92400E" text-anchor="middle">⬇ 往下沾</text>
+          </g>
+        </g>
+      `;
+
+      const svg = document.getElementById('game-svg');
+      const stick = document.getElementById('s2-chopstick');
+      const honeyTip = document.getElementById('s2-honey-tip');
+      const dropShape = document.getElementById('s2-drop-shape');
+      const badgeText = document.getElementById('s2-badge-text');
+      let dragging = false;
+
+      const getSvgY = (clientY) => {
+        const rect = svg.getBoundingClientRect();
+        return ((clientY - rect.top) / rect.height) * 420;
+      };
+
+      stick.addEventListener('pointerdown', (e) => {
+        if (appState.fsm === 'Success') return;
+        audioEngine.init();
+        dragging = true;
+        appState.fsm = 'Interacting';
+        resetIdleTimer();
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!dragging || appState.currentStep !== 2 || appState.fsm === 'Success') return;
+        const y = getSvgY(e.clientY);
+        // 限制竹筷移動範圍 (y=95 到 y=195，當 y>=182 時筷尖 y+80=262 浸入 y=265 液面)
+        chopstickY = Math.max(95, Math.min(195, y - 20));
+        stick.setAttribute('transform', `translate(400, ${chopstickY})`);
+
+        // 筷尖接觸鍋內金色液面
+        if (chopstickY >= 182 && !hasDipped) {
+          hasDipped = true;
+          honeyTip.classList.remove('hidden');
+          audioEngine.playWaterDrop();
+          badgeText.textContent = '⬆ 提起來!';
+          speakText('沾到金色松香了！現在把竹筷往上提起來！');
+        }
+
+        // 沾取後往上提起離開鍋面，水滴固定在筷尖並觸發回彈動畫
+        if (hasDipped && chopstickY <= 125) {
+          dragging = false;
+          chopstickY = 110;
+          stick.setAttribute('transform', `translate(400, ${chopstickY})`);
+          dropShape.classList.add('honey-drop-bounce');
+          audioEngine.playWaterDrop();
+          badgeText.textContent = '✨ 完成!';
+          completeCurrentStep('太棒了！竹筷前端牢牢掛著一滴金黃色的松香蜜糖！');
+        }
+      });
+
+      window.addEventListener('pointerup', () => {
+        dragging = false;
+      });
+    }
+
+    // --------------------------------------------------------------------------
+    // 步驟 03：砂紙刮刮樂 (位置與提示標示固定於竹筷前端松香塗層上，不偏移)
+    // --------------------------------------------------------------------------
+    function buildStep03(scene, controls) {
+      let rubCount = 0;
+      let lastX = null;
+      let strokeAccum = 0;
+
+      // 固定世界座標：竹筷橫置，右端松香塗層中心位於 (565, 195)
+      scene.innerHTML = `
+        <!-- 橫置竹筷與右端固定松香塗層 -->
+        <g transform="translate(160, 177)" filter="url(#softShadow)">
+          <!-- 竹筷木身 (x=0..460) -->
+          <rect x="0" y="0" width="460" height="36" rx="18" fill="url(#bambooGrad)" stroke="#92400E" stroke-width="3" />
+          <line x1="130" y1="2" x2="130" y2="34" stroke="#B45309" stroke-width="3" />
+          <line x1="280" y1="2" x2="280" y2="34" stroke="#B45309" stroke-width="3" />
+
+          <!-- 右端沾取松香塗層 (中心位於局部座標 x=405 -> 世界座標 x=565, y=195) -->
+          <rect x="355" y="-2" width="106" height="40" rx="18" fill="url(#honeyDropGrad)" stroke="#D97706" stroke-width="2.5" />
+
+          <!-- 磨出的環狀凹槽 (中心精準對準 x=405 -> 世界座標 x=565, y=195) -->
+          <g id="s3-groove" opacity="0">
+            <rect x="394" y="-3" width="22" height="42" rx="6" fill="#B45309" />
+            <rect x="398" y="-1" width="14" height="38" rx="4" fill="#FDE68A" />
+          </g>
+        </g>
+
+        <!-- 固定在松香塗層正上方的「砂紙滑動提示框」(絕不跑掉) -->
+        <g id="s3-fixed-prompt" transform="translate(565, 122)" class="pointer-events-none">
+          <rect x="-82" y="-22" width="164" height="44" rx="22" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3" filter="url(#softShadow)" />
+          <text x="0" y="6" font-size="16" font-weight="900" fill="#92400E" text-anchor="middle">⬅ 砂紙左右刷 ➡</text>
+        </g>
+
+        <!-- 星星光斑容器 (固定於 565, 195) -->
+        <g id="s3-sparkles" transform="translate(565, 195)"></g>
+
+        <!-- 砂紙道具圖示 (初始停在松香塗層上方，滑動時跟隨手勢但不影響提示框位置) -->
+        <g id="s3-sandpaper" transform="translate(565, 255)" filter="url(#softShadow)" class="pointer-events-none">
+          <rect x="-48" y="-26" width="96" height="52" rx="12" fill="#D97706" stroke="#78350F" stroke-width="3" />
+          <rect x="-40" y="-18" width="80" height="36" rx="8" fill="#92400E" stroke="#FBBF24" stroke-dasharray="3 3" />
+          <text x="0" y="6" font-size="16" font-weight="900" fill="#FEF3C7" text-anchor="middle">砂紙</text>
+        </g>
+
+        <!-- 固定在竹筷前端松香區 (565, 195) 的超大觸控熱區與呼吸光暈 -->
+        <rect id="s3-hit-zone" class="pulse-target cursor-pointer" x="475" y="135" width="180" height="125" rx="28" fill="rgba(251, 191, 36, 0.14)" stroke="#F59E0B" stroke-width="3" stroke-dasharray="8 6" />
+      `;
+
+      controls.innerHTML = `
+        <div class="bg-amber-100 border-2 border-amber-400 px-6 py-2 rounded-2xl font-black text-amber-900 text-lg sm:text-xl flex items-center gap-3">
+          <span>打磨進度：</span>
+          <span id="s3-counter" class="text-2xl text-orange-600">0 / 3 次</span>
+        </div>
+      `;
+
+      const svg = document.getElementById('game-svg');
+      const hitZone = document.getElementById('s3-hit-zone');
+      const sandpaper = document.getElementById('s3-sandpaper');
+      const sparkles = document.getElementById('s3-sparkles');
+      const groove = document.getElementById('s3-groove');
+      const counter = document.getElementById('s3-counter');
+      const fixedPrompt = document.getElementById('s3-fixed-prompt');
+      let rubbing = false;
+
+      const getSvgCoords = (e) => {
+        const rect = svg.getBoundingClientRect();
+        return {
+          x: ((e.clientX - rect.left) / rect.width) * 800,
+          y: ((e.clientY - rect.top) / rect.height) * 420
+        };
+      };
+
+      const spawnSparkle = () => {
+        const star = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        const ox = (Math.random() - 0.5) * 70;
+        const oy = (Math.random() - 0.5) * 45;
+        star.setAttribute('x', ox);
+        star.setAttribute('y', oy);
+        star.setAttribute('font-size', '26');
+        star.setAttribute('text-anchor', 'middle');
+        star.textContent = '✨';
+        sparkles.appendChild(star);
+        setTimeout(() => star.remove(), 550);
+      };
+
+      hitZone.addEventListener('pointerdown', (e) => {
+        if (appState.fsm === 'Success') return;
+        audioEngine.init();
+        rubbing = true;
+        appState.fsm = 'Interacting';
+        lastX = getSvgCoords(e).x;
+        resetIdleTimer();
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!rubbing || appState.currentStep !== 3 || appState.fsm === 'Success') return;
+        const pt = getSvgCoords(e);
+        // 限制砂紙在松香塗層區域內來回移動 (x: 515 ~ 615)
+        const clampedX = Math.max(515, Math.min(615, pt.x));
+        sandpaper.setAttribute('transform', `translate(${clampedX}, 235)`);
+
+        if (lastX !== null) {
+          strokeAccum += Math.abs(clampedX - lastX);
+          if (strokeAccum >= 48) {
+            strokeAccum = 0;
+            rubCount++;
+            counter.textContent = `${Math.min(3, rubCount)} / 3 次`;
+            audioEngine.playSandpaper();
+            spawnSparkle();
+
+            if (rubCount >= 3) {
+              rubbing = false;
+              groove.setAttribute('opacity', '1');
+              fixedPrompt.innerHTML = `
+                <rect x="-82" y="-22" width="164" height="44" rx="22" fill="#D1FAE5" stroke="#10B981" stroke-width="3" />
+                <text x="0" y="6" font-size="16" font-weight="900" fill="#065F46" text-anchor="middle">✨ 凹痕磨好了!</text>
+              `;
+              sandpaper.setAttribute('opacity', '0.35');
+              completeCurrentStep('好工整的凹痕！這樣待會綁棉線就不會滑掉了！');
+            }
+          }
+        }
+        lastX = clampedX;
+      });
+
+      window.addEventListener('pointerup', () => {
+        rubbing = false;
+        lastX = null;
+      });
+    }
+
+    // --------------------------------------------------------------------------
+    // 步驟 04：綁上棉線 (對準步驟 03 磨出的凹痕，確定纏繞 3 圈)
+    // --------------------------------------------------------------------------
+    function buildStep04(scene, controls) {
+      let wraps = 0;
+      let moveDist = 0;
+      let prevPt = null;
+
+      // 凹痕精準位於世界座標 (565, 195)
+      scene.innerHTML = `
+        <!-- 竹筷與右端已磨出凹痕的松香塗層 -->
+        <g transform="translate(160, 177)" filter="url(#softShadow)">
+          <rect x="0" y="0" width="460" height="36" rx="18" fill="url(#bambooGrad)" stroke="#92400E" stroke-width="3" />
+          <line x1="130" y1="2" x2="130" y2="34" stroke="#B45309" stroke-width="3" />
+          <line x1="280" y1="2" x2="280" y2="34" stroke="#B45309" stroke-width="3" />
+          <!-- 松香塗層 -->
+          <rect x="355" y="-2" width="106" height="40" rx="18" fill="url(#honeyDropGrad)" stroke="#D97706" stroke-width="2.5" />
+          <!-- 步驟 03 磨出的凹痕 (局部 x=394..416 -> 世界 x=554..576, 中心 565) -->
+          <rect x="392" y="-3" width="26" height="42" rx="6" fill="#B45309" />
+          <rect x="396" y="-1" width="18" height="38" rx="4" fill="#FDE68A" />
+        </g>
+
+        <!-- 垂下的紅棉線尾端 (從凹痕 565 往下延伸) -->
+        <path d="M 565 215 Q 555 270 500 295 Q 450 315 410 305" fill="none" stroke="#EF4444" stroke-width="6" stroke-linecap="round" />
+
+        <!-- 精準纏繞在凹痕處 (中心 565, 195) 的 3 圈紅棉線 -->
+        <g id="s4-coils" transform="translate(565, 195)">
+          <rect id="coil-1" x="-9" y="-21" width="6" height="42" rx="3" fill="#DC2626" stroke="#7F1D1D" stroke-width="1.5" opacity="0" />
+          <rect id="coil-2" x="-3" y="-21" width="6" height="42" rx="3" fill="#EF4444" stroke="#7F1D1D" stroke-width="1.5" opacity="0" />
+          <rect id="coil-3" x="3" y="-21" width="6" height="42" rx="3" fill="#DC2626" stroke="#7F1D1D" stroke-width="1.5" opacity="0" />
+        </g>
+
+        <!-- 固定在凹痕處的繞圈提示框 -->
+        <g transform="translate(565, 118)" class="pointer-events-none">
+          <rect x="-82" y="-22" width="164" height="44" rx="22" fill="#FEE2E2" stroke="#EF4444" stroke-width="3" />
+          <text x="0" y="6" font-size="16" font-weight="900" fill="#991B1B" text-anchor="middle">🔄 凹痕處轉 3 圈</text>
+        </g>
+
+        <!-- 凹痕處超大寬容觸控熱區 (中心 565, 195) -->
+        <circle id="s4-hit-zone" class="pulse-target cursor-pointer" cx="565" cy="195" r="78" fill="rgba(239, 68, 68, 0.14)" stroke="#EF4444" stroke-width="3" stroke-dasharray="10 6" />
+      `;
+
+      controls.innerHTML = `
+        <div class="bg-rose-100 border-2 border-rose-400 px-6 py-2 rounded-2xl font-black text-rose-900 text-lg sm:text-xl flex items-center gap-3">
+          <span>凹痕纏繞進度：</span>
+          <span id="s4-counter" class="text-2xl text-rose-600">0 / 3 圈</span>
+        </div>
+      `;
+
+      const svg = document.getElementById('game-svg');
+      const hitZone = document.getElementById('s4-hit-zone');
+      const counter = document.getElementById('s4-counter');
+      let winding = false;
+
+      const getSvgCoords = (e) => {
+        const rect = svg.getBoundingClientRect();
+        return {
+          x: ((e.clientX - rect.left) / rect.width) * 800,
+          y: ((e.clientY - rect.top) / rect.height) * 420
+        };
+      };
+
+      hitZone.addEventListener('pointerdown', (e) => {
+        if (appState.fsm === 'Success') return;
+        audioEngine.init();
+        winding = true;
+        appState.fsm = 'Interacting';
+        prevPt = getSvgCoords(e);
+        resetIdleTimer();
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!winding || appState.currentStep !== 4 || appState.fsm === 'Success') return;
+        const pt = getSvgCoords(e);
+        if (prevPt) {
+          const d = Math.hypot(pt.x - prevPt.x, pt.y - prevPt.y);
+          moveDist += d;
+          if (moveDist >= 75) {
+            moveDist = 0;
+            wraps++;
+            const coilEl = document.getElementById(`coil-${wraps}`);
+            if (coilEl) coilEl.setAttribute('opacity', '1');
+            counter.textContent = `${wraps} / 3 圈`;
+            audioEngine.playWhoosh(360 + wraps * 110, 620 + wraps * 120);
+            speakText(`第 ${wraps} 圈！`);
+
+            if (wraps >= 3) {
+              winding = false;
+              completeCurrentStep('三圈紅棉線牢牢綁在凹痕裡了！真整齊！');
+            }
+          }
+        }
+        prevPt = pt;
+      });
+
+      window.addEventListener('pointerup', () => {
+        winding = false;
+        prevPt = null;
+      });
+    }
+
+    // --------------------------------------------------------------------------
+    // 步驟 05：瓶底穿洞 (靶心衝擊對準 + 木槌音效 + 彩紙碎屑)
+    // --------------------------------------------------------------------------
+    function buildStep05(scene, controls) {
+      scene.innerHTML = `
+        <!-- 養樂多瓶底放大靶盤 -->
+        <g transform="translate(400, 215)" filter="url(#softShadow)">
+          <circle cx="0" cy="0" r="105" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="8" />
+          <circle cx="0" cy="0" r="82" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="3" />
+          <!-- 紅色靶心 -->
+          <g id="s5-target" class="pulse-target cursor-pointer">
+            <circle cx="0" cy="0" r="56" fill="#FEE2E2" />
+            <circle cx="0" cy="0" r="36" fill="#FCA5A5" />
+            <circle cx="0" cy="0" r="18" fill="#EF4444" />
+            <text x="0" y="76" font-size="16" font-weight="900" fill="#B91C1C" text-anchor="middle">點我打洞!</text>
+          </g>
+          <!-- 打穿後的工整圓孔 -->
+          <g id="s5-hole" class="hidden">
+            <circle cx="0" cy="0" r="16" fill="#334155" stroke="#94A3B8" stroke-width="3" />
+          </g>
+          <!-- 彩紙碎屑容器 -->
+          <g id="s5-confetti"></g>
+        </g>
+
+        <!-- 懸浮牙籤 (雙頭尖細造型) -->
+        <g id="s5-toothpick" transform="translate(535, 110) rotate(-35)" filter="url(#softShadow)" class="pointer-events-none">
+          <!-- 牙籤本體與兩端尖頭 -->
+          <polygon points="-85,0 -66,-4.5 66,-4.5 85,0 66,4.5 -66,4.5" fill="#FDE047" stroke="#B45309" stroke-width="2" />
+          <!-- 牙籤尾端裝飾刻紋 -->
+          <line x1="56" y1="-4" x2="56" y2="4" stroke="#B45309" stroke-width="1.5" />
+          <line x1="61" y1="-3.5" x2="61" y2="3.5" stroke="#B45309" stroke-width="1.5" />
+          <!-- 牙籤尖端標示 -->
+          <g transform="translate(0, -18) rotate(35)">
+            <rect x="-34" y="-12" width="68" height="24" rx="12" fill="#FEF3C7" stroke="#D97706" stroke-width="2" />
+            <text x="0" y="5" font-size="13" font-weight="900" fill="#92400E" text-anchor="middle">牙籤尖端</text>
+          </g>
+        </g>
+      `;
+
+      const target = document.getElementById('s5-target');
+      const hole = document.getElementById('s5-hole');
+      const toothpick = document.getElementById('s5-toothpick');
+      const confettiGroup = document.getElementById('s5-confetti');
+
+      const punchHole = () => {
+        if (appState.fsm === 'Success') return;
+        audioEngine.init();
+        appState.fsm = 'Interacting';
+        resetIdleTimer();
+
+        // 牙籤尖端 (-85, 0) 精準戳入靶心 (400, 215)：計算旋轉 -35 度後的尖端偏移量
+        toothpick.setAttribute('transform', 'translate(470, 166) rotate(-35)');
+        audioEngine.playWoodKnock(240);
+
+        setTimeout(() => {
+          toothpick.setAttribute('transform', 'translate(545, 95) rotate(-35)');
+          target.classList.add('hidden');
+          hole.classList.remove('hidden');
+
+          const colors = ['#F59E0B', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6'];
+          for (let i = 0; i < 16; i++) {
+            const angle = (i / 16) * Math.PI * 2;
+            const dist = 45 + Math.random() * 45;
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', Math.cos(angle) * dist - 5);
+            rect.setAttribute('y', Math.sin(angle) * dist - 5);
+            rect.setAttribute('width', '10');
+            rect.setAttribute('height', '10');
+            rect.setAttribute('rx', '2');
+            rect.setAttribute('fill', colors[i % colors.length]);
+            confettiGroup.appendChild(rect);
+          }
+
+          completeCurrentStep('波！用牙籤尖端在瓶底戳出一個漂漂亮亮的小圓孔了！');
+        }, 180);
+      };
+
+      target.addEventListener('pointerdown', punchHole);
+    }
+
+    // --------------------------------------------------------------------------
+    // 步驟 06：棉線穿洞 (磁吸引導光暈 + 50px 自動吸附穿入)
+    // --------------------------------------------------------------------------
+    function buildStep06(scene, controls) {
+      scene.innerHTML = `
+        <!-- 養樂多瓶側視圖 (右側) -->
+        <g transform="translate(520, 215)" filter="url(#softShadow)">
+          <path d="M-85 -75 L65 -75 Q85 -75 85 -55 L85 55 Q85 75 65 75 L-85 75 Q-100 75 -100 55 L-100 -55 Q-100 -75 -85 -75 Z" fill="url(#bottleGrad)" stroke="#94A3B8" stroke-width="4" />
+          <rect x="-45" y="-73" width="60" height="146" fill="#EF4444" opacity="0.85" />
+          <text x="-15" y="6" font-size="18" font-weight="900" fill="#FFFFFF" text-anchor="middle" transform="rotate(-90 -15 6)">共鳴筒</text>
+          <!-- 瓶底小洞目標 (世界座標 x=420, y=215) -->
+          <circle cx="-100" cy="0" r="14" fill="#334155" stroke="#F59E0B" stroke-width="3" />
+          <circle id="s6-magnet-ring" cx="-100" cy="0" r="36" fill="rgba(251, 191, 36, 0.25)" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5 5" />
+        </g>
+
+        <!-- 竹筷與紅線 (左側) -->
+        <g transform="translate(110, 198)" filter="url(#softShadow)">
+          <rect x="0" y="0" width="120" height="34" rx="14" fill="url(#bambooGrad)" stroke="#92400E" stroke-width="3" />
+          <rect x="85" y="-2" width="16" height="38" rx="4" fill="#DC2626" />
+        </g>
+
+        <!-- 動態紅線路徑 -->
+        <path id="s6-thread" d="M 203 215 Q 230 235 260 215" fill="none" stroke="#EF4444" stroke-width="6" stroke-linecap="round" />
+
+        <!-- 可拖曳的磁吸引導光暈線頭 -->
+        <g id="s6-tip" transform="translate(260, 215)" class="pulse-target cursor-grab">
+          <circle cx="0" cy="0" r="38" fill="rgba(251, 191, 36, 0.35)" />
+          <circle cx="0" cy="0" r="16" fill="#EF4444" stroke="#FEF08A" stroke-width="4" />
+          <text x="0" y="-26" font-size="14" font-weight="900" fill="#B91C1C" text-anchor="middle">拉我進洞!</text>
+        </g>
+      `;
+
+      const svg = document.getElementById('game-svg');
+      const tip = document.getElementById('s6-tip');
+      const thread = document.getElementById('s6-thread');
+      let dragging = false;
+
+      const getSvgCoords = (e) => {
+        const rect = svg.getBoundingClientRect();
+        return {
+          x: ((e.clientX - rect.left) / rect.width) * 800,
+          y: ((e.clientY - rect.top) / rect.height) * 420
+        };
+      };
+
+      tip.addEventListener('pointerdown', (e) => {
+        if (appState.fsm === 'Success') return;
+        audioEngine.init();
+        dragging = true;
+        appState.fsm = 'Interacting';
+        resetIdleTimer();
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!dragging || appState.currentStep !== 6 || appState.fsm === 'Success') return;
+        const pt = getSvgCoords(e);
+        const tx = Math.max(210, Math.min(560, pt.x));
+        const ty = Math.max(90, Math.min(310, pt.y));
+
+        tip.setAttribute('transform', `translate(${tx}, ${ty})`);
+        thread.setAttribute('d', `M 203 215 Q ${(203 + tx) / 2} ${ty + 25} ${tx} ${ty}`);
+
+        // 50px 磁吸範圍判定 (目標洞口位於 420, 215)
+        const dist = Math.hypot(tx - 420, ty - 215);
+        if (dist <= 55) {
+          dragging = false;
+          // 磁吸自動平滑穿入瓶內
+          tip.setAttribute('transform', 'translate(575, 215)');
+          thread.setAttribute('d', 'M 203 215 L 575 215');
+          audioEngine.playWhoosh(450, 980);
+          completeCurrentStep('溜！紅線順順地穿過瓶底小洞囉！');
+        }
+      });
+
+      window.addEventListener('pointerup', () => {
+        dragging = false;
+      });
+    }
+
+    // --------------------------------------------------------------------------
+    // 步驟 07：卡榫鎖定 (牙籤在杯子內，線在外面拉！)
+    // --------------------------------------------------------------------------
+    function buildStep07(scene, controls) {
+      scene.innerHTML = `
+        <!-- 養樂多杯子直立正視圖 (半透明杯身，清楚呈現牙籤在杯子裡面，紅線從杯底穿到杯子外面) -->
+        <g transform="translate(400, 175)" filter="url(#softShadow)">
+          <!-- 杯子內部空腔背景 -->
+          <path d="M-76 -82 L76 -82 L68 58 Q66 72 50 72 L-50 72 Q-66 72 -68 58 Z" fill="url(#bottleInnerGrad)" />
+
+          <!-- 杯底小圓孔 (位於杯底中央 y = 72) -->
+          <ellipse cx="0" cy="72" rx="14" ry="6" fill="#1E293B" />
+
+          <!-- 杯子裡面的牙籤卡榫 (橫向放在杯子內部靠近杯底 y = 52 處，綁著紅線結) -->
+          <g id="s7-toothpick" transform="translate(0, 38)">
+            <!-- 牙籤本體 (寬度 108px，完全在杯身寬度 136px 裡面) -->
+            <polygon points="-54,0 -42,-5 42,-5 54,0 42,5 -42,5" fill="#FDE047" stroke="#B45309" stroke-width="2.5" />
+            <!-- 牙籤中央紅線結 -->
+            <circle cx="0" cy="0" r="8" fill="#DC2626" stroke="#7F1D1D" stroke-width="2" />
+            <text x="0" y="-14" font-size="13" font-weight="900" fill="#92400E" text-anchor="middle">牙籤在杯子裡面</text>
+          </g>
+
+          <!-- 杯子半透明前壁 (讓孩子看透杯子裡面的牙籤) -->
+          <path d="M-76 -82 L76 -82 L68 58 Q66 72 50 72 L-50 72 Q-66 72 -68 58 Z" fill="url(#bottleGrad)" stroke="#94A3B8" stroke-width="4" />
+          <!-- 杯口外緣 -->
+          <ellipse cx="0" cy="-82" rx="76" ry="12" fill="#E2E8F0" stroke="#94A3B8" stroke-width="3" />
+          <!-- 杯身半透明腰封標籤 -->
+          <rect x="-71" y="-42" width="142" height="44" fill="#EF4444" opacity="0.28" />
+          <text x="0" y="-15" font-size="15" font-weight="900" fill="#991B1B" text-anchor="middle">養樂多杯</text>
+        </g>
+
+        <!-- 紅線從杯子裡面牙籤結穿過杯底小孔，延伸到杯子外面下方 -->
+        <line id="s7-string" x1="400" y1="213" x2="400" y2="322" stroke="#EF4444" stroke-width="6" stroke-linecap="round" />
+
+        <!-- 杯子外面的下拉把手 (可供幼兒在外面往下拉) -->
+        <g id="s7-pull-handle" transform="translate(400, 322)" class="pulse-target cursor-grab">
+          <circle cx="0" cy="0" r="34" fill="#FEE2E2" stroke="#EF4444" stroke-width="4" filter="url(#softShadow)" />
+          <text x="0" y="7" font-size="16" font-weight="900" fill="#B91C1C" text-anchor="middle">⬇ 外面拉</text>
+        </g>
+      `;
+
+      const svg = document.getElementById('game-svg');
+      const handle = document.getElementById('s7-pull-handle');
+      const string = document.getElementById('s7-string');
+      const toothpick = document.getElementById('s7-toothpick');
+      let pulling = false;
+
+      const getSvgY = (e) => {
+        const rect = svg.getBoundingClientRect();
+        return ((e.clientY - rect.top) / rect.height) * 420;
+      };
+
+      handle.addEventListener('pointerdown', (e) => {
+        if (appState.fsm === 'Success') return;
+        audioEngine.init();
+        pulling = true;
+        appState.fsm = 'Interacting';
+        resetIdleTimer();
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!pulling || appState.currentStep !== 7 || appState.fsm === 'Success') return;
+        const y = Math.max(322, Math.min(372, getSvgY(e)));
+        const delta = y - 322;
+
+        // 杯外拉環往下移動
+        handle.setAttribute('transform', `translate(400, ${y})`);
+        // 杯內牙籤被往下拉，直到緊緊頂住杯子內部底面 (local y = 42 -> 世界 y = 217)
+        const innerToothpickLocalY = Math.min(42, 38 + delta * 0.25);
+        toothpick.setAttribute('transform', `translate(0, ${innerToothpickLocalY})`);
+        string.setAttribute('y1', `${175 + innerToothpickLocalY}`);
+        string.setAttribute('y2', `${y}`);
+
+        if (delta >= 26) {
+          pulling = false;
+          toothpick.setAttribute('transform', 'translate(0, 42)');
+          string.setAttribute('y1', '217');
+          audioEngine.playWoodKnock(320);
+          handle.innerHTML = `
+            <circle cx="0" cy="0" r="34" fill="#D1FAE5" stroke="#10B981" stroke-width="4" />
+            <text x="0" y="7" font-size="15" font-weight="900" fill="#065F46" text-anchor="middle">咔噠! 卡緊</text>
+          `;
+          completeCurrentStep('咔噠！杯子裡面的牙籤橫著卡住杯底，外面怎麼拉都不會掉出來！');
+        }
+      });
+
+      window.addEventListener('pointerup', () => {
+        pulling = false;
+      });
+    }
+
+    // --------------------------------------------------------------------------
+    // 步驟 08：甩動發聲 (指尖畫大圈圈旋轉 + Web Audio 蟬鳴角速度連動)
+    // --------------------------------------------------------------------------
+    function buildStep08(scene, controls) {
+      let currentAngle = 0;
+      let totalRotation = 0;
+      let lastPointerAngle = null;
+      let lastTime = performance.now();
+      let angularVelocity = 0;
+      let decayRaf = null;
+
+      scene.innerHTML = `
+        <!-- 旋轉軌道指示圈 -->
+        <circle cx="400" cy="210" r="135" fill="none" stroke="#FCD34D" stroke-width="6" stroke-dasharray="16 12" />
+        <text x="400" y="64" font-size="15" font-weight="900" fill="#B45309" text-anchor="middle">🔄 手指畫大圈圈甩動竹蟬</text>
+
+        <!-- 旋轉中心握柄 (竹筷) -->
+        <g transform="translate(400, 210)">
+          <!-- 動態旋轉的紅線與養樂多共鳴筒 -->
+          <g id="s8-rotor" transform="rotate(0)">
+            <line x1="0" y1="0" x2="125" y2="0" stroke="#EF4444" stroke-width="5" />
+            <!-- 養樂多罐共鳴箱 -->
+            <g transform="translate(125, 0) rotate(90)" filter="url(#softShadow)">
+              <rect x="-26" y="-34" width="52" height="68" rx="14" fill="#FFFFFF" stroke="#94A3B8" stroke-width="3" />
+              <rect x="-25" y="-14" width="50" height="28" fill="#EF4444" />
+            </g>
+            <!-- 聲波紋 -->
+            <g id="s8-soundwaves" opacity="0">
+              <path d="M 162 -22 Q 178 0 162 22" fill="none" stroke="#F59E0B" stroke-width="4" stroke-linecap="round" />
+              <path d="M 174 -34 Q 196 0 174 34" fill="none" stroke="#EF4444" stroke-width="4" stroke-linecap="round" />
+            </g>
+          </g>
+
+          <!-- 中央竹筷握把 -->
+          <rect x="-14" y="-42" width="28" height="84" rx="12" fill="url(#bambooGrad)" stroke="#92400E" stroke-width="3" filter="url(#softShadow)" />
+          <rect x="-15" y="-12" width="30" height="16" rx="4" fill="#DC2626" />
+        </g>
+
+        <!-- 全舞台寬容轉圈感應區 -->
+        <circle id="s8-spin-zone" class="pulse-target cursor-grab" cx="400" cy="210" r="175" fill="transparent" />
+      `;
+
+      controls.innerHTML = `
+        <div class="bg-amber-100 border-2 border-amber-400 px-5 py-2 rounded-2xl font-black text-amber-900 text-base sm:text-lg flex items-center gap-4">
+          <span>蟬鳴音量：</span>
+          <div class="w-32 sm:w-44 h-4 bg-amber-200 rounded-full overflow-hidden border border-amber-400">
+            <div id="s8-meter" class="h-full bg-gradient-to-r from-emerald-400 to-amber-500 w-0 transition-all duration-75"></div>
+          </div>
+          <span id="s8-status" class="text-emerald-700 text-sm sm:text-base">轉快一點!</span>
+        </div>
+      `;
+
+      const svg = document.getElementById('game-svg');
+      const spinZone = document.getElementById('s8-spin-zone');
+      const rotor = document.getElementById('s8-rotor');
+      const waves = document.getElementById('s8-soundwaves');
+      const meter = document.getElementById('s8-meter');
+      const statusText = document.getElementById('s8-status');
+      let spinning = false;
+
+      const getAngleFromCenter = (e) => {
+        const rect = svg.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 800;
+        const y = ((e.clientY - rect.top) / rect.height) * 420;
+        return Math.atan2(y - 210, x - 400);
+      };
+
+      const updateLoop = () => {
+        if (appState.currentStep !== 8) {
+          audioEngine.stopCicadaSound();
+          return;
+        }
+        angularVelocity *= 0.92;
+        currentAngle += angularVelocity * 4.5;
+        rotor.setAttribute('transform', `rotate(${currentAngle})`);
+
+        const pct = Math.min(100, (angularVelocity / 12) * 100);
+        meter.style.width = `${pct}%`;
+        waves.setAttribute('opacity', pct > 20 ? '1' : '0');
+
+        audioEngine.updateCicadaSound(angularVelocity);
+
+        if (totalRotation >= Math.PI * 3.5 && appState.fsm !== 'Success') {
+          statusText.textContent = '好響亮呀!';
+          completeCurrentStep('聽！竹筷摩擦棉線，透過養樂多罐共鳴，發出像真蟬一樣的叫聲了！');
+        }
+
+        decayRaf = requestAnimationFrame(updateLoop);
+      };
+      decayRaf = requestAnimationFrame(updateLoop);
+
+      spinZone.addEventListener('pointerdown', (e) => {
+        audioEngine.init();
+        spinning = true;
+        if (appState.fsm === 'Idle') appState.fsm = 'Interacting';
+        lastPointerAngle = getAngleFromCenter(e);
+        lastTime = performance.now();
+        resetIdleTimer();
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!spinning || appState.currentStep !== 8) return;
+        const now = performance.now();
+        const angle = getAngleFromCenter(e);
+        if (lastPointerAngle !== null) {
+          let diff = angle - lastPointerAngle;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+
+          const dt = Math.max(0.016, (now - lastTime) / 1000);
+          const instVel = Math.abs(diff) / dt;
+          angularVelocity = Math.min(22, angularVelocity * 0.5 + instVel * 0.65);
+          totalRotation += Math.abs(diff);
+        }
+        lastPointerAngle = angle;
+        lastTime = now;
+      });
+
+      window.addEventListener('pointerup', () => {
+        spinning = false;
+        lastPointerAngle = null;
+      });
+    }
+
+    // --------------------------------------------------------------------------
+    // 步驟 09：小工匠勳章與童玩收藏箱 (免輸入姓名，直接頒發勳章)
+    // --------------------------------------------------------------------------
+    function buildStep09(scene, controls) {
+      appState.completedSteps.add(9);
+      renderProgressDots();
+      launchConfetti();
+      audioEngine.playSuccessFanfare();
+
+      scene.innerHTML = `
+        <!-- 榮譽光芒背景 -->
+        <g transform="translate(400, 195)">
+          <circle cx="0" cy="0" r="145" fill="#FEF3C7" opacity="0.75" />
+          <circle cx="0" cy="0" r="115" fill="#FDE68A" stroke="#F59E0B" stroke-width="6" filter="url(#softShadow)" />
+
+          <!-- 勳章緞帶 -->
+          <polygon points="-45,95 -65,165 -30,148 -10,168 -10,95" fill="#EF4444" stroke="#991B1B" stroke-width="2" />
+          <polygon points="45,95 65,165 30,148 10,168 10,95" fill="#EF4444" stroke="#991B1B" stroke-width="2" />
+
+          <!-- 勳章中央自製竹蟬圖騰 -->
+          <g transform="translate(0, -15)">
+            <rect x="-8" y="-42" width="16" height="84" rx="8" fill="#D97706" />
+            <line x1="0" y1="-22" x2="48" y2="-35" stroke="#EF4444" stroke-width="4" />
+            <rect x="44" y="-52" width="28" height="36" rx="8" fill="#FFFFFF" stroke="#64748B" stroke-width="2.5" transform="rotate(15 44 -52)" />
+            <rect x="45" y="-42" width="26" height="14" fill="#EF4444" transform="rotate(15 44 -52)" />
+          </g>
+
+          <!-- 勳章稱號 (免輸入姓名) -->
+          <rect x="-118" y="42" width="236" height="44" rx="22" fill="#B45309" stroke="#FEF3C7" stroke-width="3" />
+          <text x="0" y="70" font-size="19" font-weight="900" fill="#FFFFFF" text-anchor="middle">🏅 小小童玩工匠勳章</text>
+        </g>
+      `;
+
+      controls.innerHTML = `
+        <button onclick="saveToCollection()" class="btn-toy bg-gradient-to-b from-sky-400 to-blue-600 border-4 border-blue-800 text-white font-black text-lg sm:text-xl px-7 py-3 rounded-3xl shadow-[0_5px_0_#1E3A8A] flex items-center gap-2 cursor-pointer">
+          <span>🧸</span>
+          <span>收入童玩收藏箱</span>
+        </button>
+      `;
+    }
+
+    function saveToCollection() {
+      audioEngine.init();
+      audioEngine.playSuccessFanfare();
+      appState.savedCicadas++;
+      document.getElementById('box-count').textContent = appState.savedCicadas;
+      speakText('太棒了！自製竹蟬已經收進童玩收藏箱，隨時都可以點開搖響喔！');
+      openCollectionModal();
+    }
+
+    function openCollectionModal() {
+      audioEngine.init();
+      const boxContent = document.getElementById('box-content');
+      if (appState.savedCicadas === 0) {
+        boxContent.innerHTML = `
+          <div class="text-5xl my-2">📦</div>
+          <p class="font-bold text-stone-600">收藏箱還是空的喔！<br>完成 9 個步驟就能把自製竹蟬收進來！</p>
+        `;
+      } else {
+        boxContent.innerHTML = `
+          <div class="bg-white border-2 border-amber-300 rounded-2xl p-4 w-full flex flex-col items-center gap-3 shadow-sm">
+            <div class="text-sm font-black text-amber-800 bg-amber-100 px-3 py-1 rounded-full">
+              已收藏 ${appState.savedCicadas} 隻手工竹蟬
+            </div>
+            <svg id="box-cicada-svg" viewBox="0 0 160 120" class="w-40 h-28 transition-transform duration-150">
+              <rect x="74" y="20" width="12" height="85" rx="6" fill="#D97706" />
+              <line x1="80" y1="35" x2="125" y2="25" stroke="#EF4444" stroke-width="4" />
+              <rect x="120" y="10" width="24" height="32" rx="6" fill="#FFFFFF" stroke="#64748B" stroke-width="2" />
+              <rect x="121" y="18" width="22" height="12" fill="#EF4444" />
+            </svg>
+            <button onclick="shakeCollectedCicada()" class="btn-toy w-full bg-amber-400 hover:bg-amber-300 border-2 border-amber-600 text-amber-950 font-black py-3 rounded-2xl text-lg shadow-[0_4px_0_#B45309] cursor-pointer">
+              🎶 點我甩動搖響竹蟬！
+            </button>
+          </div>
+        `;
+      }
+      toggleModal('modal-box', true);
+    }
+
+    function shakeCollectedCicada() {
+      audioEngine.init();
+      const svgEl = document.getElementById('box-cicada-svg');
+      let t = 0;
+      const timer = setInterval(() => {
+        t += 0.25;
+        const rot = Math.sin(t * 14) * 24;
+        if (svgEl) svgEl.style.transform = `rotate(${rot}deg) scale(1.08)`;
+        audioEngine.updateCicadaSound(14 + Math.sin(t * 6) * 4);
+        if (t >= 3.2) {
+          clearInterval(timer);
+          if (svgEl) svgEl.style.transform = 'rotate(0deg) scale(1)';
+          audioEngine.stopCicadaSound();
+        }
+      }, 45);
+    }
+
+    function launchConfetti() {
+      const container = document.getElementById('confetti-container');
+      container.innerHTML = '';
+      const colors = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#EC4899'];
+      for (let i = 0; i < 36; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece absolute rounded-sm';
+        el.style.left = `${Math.random() * 100}%`;
+        el.style.top = `-20px`;
+        el.style.width = `${8 + Math.random() * 8}px`;
+        el.style.height = `${12 + Math.random() * 10}px`;
+        el.style.backgroundColor = colors[i % colors.length];
+        el.style.animationDelay = `${Math.random() * 0.6}s`;
+        container.appendChild(el);
+      }
+      setTimeout(() => { container.innerHTML = ''; }, 3200);
+    }
+
+    function toggleModal(id, show) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (show) {
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+        audioEngine.stopCicadaSound();
+      }
+    }
+
+    // 啟動 App (每次執行皆從第一步驟開始)
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
